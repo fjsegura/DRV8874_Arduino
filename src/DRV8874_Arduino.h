@@ -1,5 +1,5 @@
 /*
-  DRV8874_Arduino.h - Library for using DRV8874 from Textas Instruments.
+  DRV8874_Arduino.h - Library for using DRV8874 from Texas Instruments.
   Created by Francisco Segura, August 8, 2024.
   Released into the public domain.
 */
@@ -20,17 +20,19 @@ class DRV8874
     void  begin(bool pullupAlarm = false);
     void  resetSafe();
     void  updateSpeed(float speed);
-    void  rampSpeedAcc();
-    void  rampSpeedTime();
+    void  rampSpeedAcc (float targetSpeed, float setAcc,      bool useLoop  = true);
+    void  rampSpeedTime(float targetSpeed, float timeSeconds, bool useDelay = true);
+    void  coastBrake();
     bool  checkAlarm();
     float currentSpeed();
   private:
-    int  _enIn1Pin;
-    int  _phIn2Pin;
-    int  _sleepPin;
-    int  _alarmPin;
-    bool alarmState;
-    bool alarmState;
+    int   _enIn1Pin;
+    int   _phIn2Pin;
+    int   _sleepPin;
+    int   _alarmPin;
+    bool  _alarmState;
+    bool  _invertControl;
+    bool  _enablePwmMode;
     float _speed;
     float _acceleration;
 
