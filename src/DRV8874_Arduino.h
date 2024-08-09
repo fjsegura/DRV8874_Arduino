@@ -8,8 +8,10 @@
 #include "Arduino.h"
 
 //Used for the reset safe with delay, minimun time before continuing
-#define MIN_RECOVER_TIME 10
+#define _MIN_RECOVER_TIME 10
 
+//Set the resolution for the PWM driver, should match MCU pwm resolution
+#define _PWM_RESOLUTION_DRIVER 8
 
 class DRV8874
 {
@@ -24,7 +26,7 @@ class DRV8874
 	    );
     void  begin(bool pullupAlarm = false);
     void  resetSafe(int int_reset_time_ms = 1000, bool useDelay = true);
-    void  updateSpeed(float speed);
+    void  updatePossibleSpeed(float speed);
     void  rampSpeedAcc (float targetSpeed, float setAcc,      bool useLoop  = true);
     void  rampSpeedTime(float targetSpeed, float timeSeconds, bool useDelay = true);
     void  coastBrake();
@@ -39,12 +41,18 @@ class DRV8874
     bool  _invertControl;
     bool  _enablePwmMode;
     bool  _resetInProgress;
+    bool  _waitInProgress;
+    bool  _accInProgress;
     long  _resetTime;
     float _speed;
     float _acceleration;
-    //internal functions
+    void  _updateSpeed(float speed);
     void _resetSafeDelay();
     void _resetSafeNoDelay();
-
+    void _updateSpeedPwm(float speed);
+    void _updateSpeedPhEn(float speed);
+    float _capSpeed(float speed);
+    int   _pwmValue(float absSpeed);
+ 
 };
 #endif

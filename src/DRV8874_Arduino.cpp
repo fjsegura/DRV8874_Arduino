@@ -30,9 +30,11 @@ DRV8874::DRV8874(
   _enablePwmMode = enablePwmMode;
   _invertControl = invertControl;
 }
+
 /*
 Begin function, enable internal pull with pullupAlarm = true.
 */
+
 void DRV8874::begin(bool pullupAlarm = false)
 {
   // Setup pin modes
@@ -47,59 +49,161 @@ void DRV8874::begin(bool pullupAlarm = false)
 }
 
 /*
+`checkAlarm` returns true if DRV8874 is alarmed.
+*/
+bool  DRV8874::checkAlarm(){
+  return !bool(digitalRead(_alarmPin));
+}
+
+/*
 `resetSafe` resets DRV8874 when alarmed.
 */
 void  DRV8874::resetSafe(int int_reset_time_ms = 1000, bool useDelay = true){
   //Return if not alarmed
-  if (!checkAlarm()){
+  if (!DRV8874::checkAlarm() && !_resetInProgress){
     return;
   }
   //Use delay for the reset
   if (useDelay){
-    _resetSafeDelay(int_reset_time_ms);
+    DRV8874::_resetSafeDelay(int_reset_time_ms);
     return;  
   }
   //No delay
-  _resetSafeNoDelay(int_reset_time_ms);
+  DRV8874::_resetSafeNoDelay(int_reset_time_ms);
 }
 
 /*
 Resets the DRV8874 by driving the sleep pin using delay. 
 */
-void _resetSafeDelay(int int_reset_time_ms){
+void DRV8874::_resetSafeDelay(int int_reset_time_ms){
   digitalWrite(_sleepPin, LOW);
   delay(reset_time_ms);
   digitalWrite(_sleepPin, HIGH);
-  delay(MIN_RECOVER_TIME);
+  delay(_MIN_RECOVER_TIME);
 }
 /*
 Resets the DRV8874 by driving the sleep pin without using delay. 
 */
-void _resetSafeNoDelay(int int_reset_time_ms){
+void DRV8874::_resetSafeNoDelay(int int_reset_time_ms){
   if (!_resetInProgress){
     digitalWrite(_sleepPin, LOW);
     _resetTime = millis();
     _resetInProgress = true;
+    _waitInProgress  = false;
     return;
   }
   //Wait X time before driving HIGH the sleep pin
-  if ((millis()-_resetTime)>int_reset_time_ms){
+  if (((millis()-_resetTime)>int_reset_time_ms) && !_waitInProgress){
     digitalWrite(_sleepPin, HIGH);
+    _waitInProgress = true;
     _resetTime = millis();
   }
   //Allow time for driver to stabilize
-  if ((millis()-_resetTime)>MIN_RECOVER_TIME){
+  if ((millis()-_resetTime)>_MIN_RECOVER_TIME){
     _resetInProgress = false;
+    _waitInProgress = false;
   }
 }
-
-void  DRV8874::updateSpeed(float speed){
+/*
+Updates the motor speed by a `float speed` value. Value has to be between -100.0 and 100.0
+Any   value higher or lower will be capped.
+*/
+void  DRV8874::updatePossibleSpeed(float speed){
+  //Don't update speed if the reset is in progress
   if (_resetInProgress){
     return;
   }
-
-  return;
+  //Don't update speed if acc is in progress
+  if (_accInProgress){
+    return;
+  }
+  _updateSpeed(speed);
 }
+/*
+Updates the motor speed by a `float speed` value. Value has to be between -100.0 and 100.0
+Any   value higher or lower will be capped.
+*/
+void  DRV8874::_updateSpeed(float speed){
+  _speed = speed;
+  float cappedSpeed = DRV8874::_capSpeed(_speed);
+  if (enablePwmMode){
+    DRV8874::_updateSpeedPWM(cappedSpeed);
+    return;
+  }
+  DRV8874::_updateSpeedPhEN(cappedSpeed);
+}
+
+/*
+Updates the motor speed by a `float speed` value. Using the Phase / Enable mode.    
+*/
+void DRV8874::_updateSpeedPhEn(float speed){
+  if (speed == 0){
+    digitalWrite(_enIn1Pin, LOW);
+    digitalWrite(_phIn2Pin, LOW);
+    return;
+  } 
+  //Set direction
+  if (speed > 0){
+    //Postive value
+    digitalWrite(_enIn1Pin, !_invertControl);
+  } else {
+    //Negative value
+    digitalWrite(_enIn1Pin, _invertControl);
+  }
+  //Set speed
+  float absSpeed = abs(speed);
+  analogWrite(_phIn2Pin, DRV8874::_pwmValue(absSpeed));
+}
+
+/*
+Updates the motor speed by a `float speed` value. Using the PWM mode
+*/
+void DRV8874::_updateSpeedPwm(float speed){
+  if (speed == 0){
+    digitalWrite(_enIn1Pin, LOW);
+    digitalWrite(_phIn2Pin, LOW);
+    return;
+  } 
+  int pwmValue1 = 0;
+  int pwmValue2 = 0;
+
+  //Set speed
+  float absSpeed = abs(speed);
+  int speedPwm = _pwmValue(absSpeed);
+  //Set direction
+  if (speed > 0){
+    //Postive value
+    pwmValue1 = speedPwm;
+    pwmValue2 = 0;
+  } else {
+    //Negative value
+    pwmValue1 = 0;
+    pwmValue2 = speedPwm;
+  }
+  //Invert direction
+  if (_invertControl){
+    int tempPwm = pwmValue1;
+    pwmValue1 = pwmValue2;
+    pwmValue2 = tempPwm;
+  } 
+  analogWrite(_enIn1Pin, pwmValue1);
+  analogWrite(_phIn2Pin, pwmValue2);
+}
+
+int DRV8874::_pwmValue(float absSpeed) {
+  
+  return 0;
+}
+float DRV8874::_capSpeed(float speed){
+  if (speed > 100.0){
+    return 100.0;
+  } 
+  if (speed < -100.0){
+    return -100.0;
+  }
+  return speed;
+}
+
 void  DRV8874::rampSpeedAcc (float targetSpeed, float setAcc,      bool useLoop  = true){
   if (_resetInProgress){
     return;
@@ -117,11 +221,8 @@ void  DRV8874::coastBrake(){
 }
 
 /*
-`checkAlarm` returns true if DRV8874 is alarmed.
+Return current `float speed` value.
 */
-bool  DRV8874::checkAlarm(){
-  return !bool(digitalRead(_alarmPin));
-}
 float DRV8874::currentSpeed(){
-  return;
+  return _speed;
 }
