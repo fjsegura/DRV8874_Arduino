@@ -1,2 +1,4 @@
 #Ignore vim files
 *~
+#Ignore vscode files
+.vscode
