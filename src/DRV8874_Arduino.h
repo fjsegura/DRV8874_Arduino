@@ -6,6 +6,11 @@
 #ifndef DRV8874_Arduino_h
 #define DRV8874_Arduino_h
 #include "Arduino.h"
+
+//Used for the reset safe with delay, minimun time before continuing
+#define MIN_RECOVER_TIME 10
+
+
 class DRV8874
 {
   public:
@@ -18,7 +23,7 @@ class DRV8874
 	    bool enablePwmMode = false
 	    );
     void  begin(bool pullupAlarm = false);
-    void  resetSafe();
+    void  resetSafe(int int_reset_time_ms = 1000, bool useDelay = true);
     void  updateSpeed(float speed);
     void  rampSpeedAcc (float targetSpeed, float setAcc,      bool useLoop  = true);
     void  rampSpeedTime(float targetSpeed, float timeSeconds, bool useDelay = true);
@@ -33,8 +38,13 @@ class DRV8874
     bool  _alarmState;
     bool  _invertControl;
     bool  _enablePwmMode;
+    bool  _resetInProgress;
+    long  _resetTime;
     float _speed;
     float _acceleration;
+    //internal functions
+    void _resetSafeDelay();
+    void _resetSafeNoDelay();
 
 };
 #endif

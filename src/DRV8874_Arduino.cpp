@@ -31,28 +31,97 @@ DRV8874::DRV8874(
   _invertControl = invertControl;
 }
 /*
-Begin function
+Begin function, enable internal pull with pullupAlarm = true.
 */
-void DRV8874::begin()
+void DRV8874::begin(bool pullupAlarm = false)
 {
-  pinMode(_pin, OUTPUT);
-}
-/*
- 
- 
-*/
-void DRV8874::dot()
-{
-  digitalWrite(_pin, HIGH);
-  delay(250);
-  digitalWrite(_pin, LOW);
-  delay(250);  
+  // Setup pin modes
+  pinMode(_enIn1Pin, OUTPUT);
+  pinMode(_phIn2Pin, OUTPUT);
+  pinMode(_sleepPin, OUTPUT);
+  if (pullupAlarm){
+  	pinMode(_alarmPin,INPUT_PULLUP);
+  } else {
+  	pinMode(_alarmPin,INPUT);
+  }
 }
 
-void DRV8874::dash()
-{
-  digitalWrite(_pin, HIGH);
-  delay(1000);
-  digitalWrite(_pin, LOW);
-  delay(250);
+/*
+`resetSafe` resets DRV8874 when alarmed.
+*/
+void  DRV8874::resetSafe(int int_reset_time_ms = 1000, bool useDelay = true){
+  //Return if not alarmed
+  if (!checkAlarm()){
+    return;
+  }
+  //Use delay for the reset
+  if (useDelay){
+    _resetSafeDelay(int_reset_time_ms);
+    return;  
+  }
+  //No delay
+  _resetSafeNoDelay(int_reset_time_ms);
+}
+
+/*
+Resets the DRV8874 by driving the sleep pin using delay. 
+*/
+void _resetSafeDelay(int int_reset_time_ms){
+  digitalWrite(_sleepPin, LOW);
+  delay(reset_time_ms);
+  digitalWrite(_sleepPin, HIGH);
+  delay(MIN_RECOVER_TIME);
+}
+/*
+Resets the DRV8874 by driving the sleep pin without using delay. 
+*/
+void _resetSafeNoDelay(int int_reset_time_ms){
+  if (!_resetInProgress){
+    digitalWrite(_sleepPin, LOW);
+    _resetTime = millis();
+    _resetInProgress = true;
+    return;
+  }
+  //Wait X time before driving HIGH the sleep pin
+  if ((millis()-_resetTime)>int_reset_time_ms){
+    digitalWrite(_sleepPin, HIGH);
+    _resetTime = millis();
+  }
+  //Allow time for driver to stabilize
+  if ((millis()-_resetTime)>MIN_RECOVER_TIME){
+    _resetInProgress = false;
+  }
+}
+
+void  DRV8874::updateSpeed(float speed){
+  if (_resetInProgress){
+    return;
+  }
+
+  return;
+}
+void  DRV8874::rampSpeedAcc (float targetSpeed, float setAcc,      bool useLoop  = true){
+  if (_resetInProgress){
+    return;
+  }
+  return;
+}
+void  DRV8874::rampSpeedTime(float targetSpeed, float timeSeconds, bool useDelay = true){
+  if (_resetInProgress){
+    return;
+  }
+  return;
+}
+void  DRV8874::coastBrake(){
+  return;
+}
+
+/*
+`checkAlarm` returns true if DRV8874 is alarmed.
+*/
+bool  DRV8874::checkAlarm(){
+  return !bool(digitalRead(_alarmPin));
+}
+float DRV8874::currentSpeed(){
+  return;
 }
