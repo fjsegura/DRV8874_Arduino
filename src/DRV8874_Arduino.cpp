@@ -19,9 +19,9 @@ DRV8874::DRV8874(
 		    int phIn2Pin,
 		    int sleepPin,
 		    int alarmPin,
-		    bool invertControl = false,
-		    bool enablePwmMode = false
-		    );
+		    bool invertControl /*= false*/,
+		    bool enablePwmMode /*= false*/
+		    )
 {
   _enIn1Pin = enIn1Pin;
   _phIn2Pin = phIn2Pin;
@@ -35,7 +35,7 @@ DRV8874::DRV8874(
 Begin function, enable internal pull with pullupAlarm = true.
 */
 
-void DRV8874::begin(bool pullupAlarm = false)
+void DRV8874::begin(bool pullupAlarm /*= true*/)
 {
   // Setup pin modes
   pinMode(_enIn1Pin, OUTPUT);
@@ -58,7 +58,7 @@ bool  DRV8874::checkAlarm(){
 /*
 `resetSafe` resets DRV8874 when alarmed.
 */
-void  DRV8874::resetSafe(int int_reset_time_ms = 1000, bool useDelay = true){
+void  DRV8874::resetSafe(int int_reset_time_ms /*= 1000*/, bool useDelay /*= true*/){
   //Return if not alarmed
   if (!DRV8874::checkAlarm() && !_resetInProgress){
     return;
@@ -77,7 +77,7 @@ Resets the DRV8874 by driving the sleep pin using delay.
 */
 void DRV8874::_resetSafeDelay(int int_reset_time_ms){
   digitalWrite(_sleepPin, LOW);
-  delay(reset_time_ms);
+  delay(int_reset_time_ms);
   digitalWrite(_sleepPin, HIGH);
   delay(_MIN_RECOVER_TIME);
 }
@@ -119,6 +119,7 @@ void  DRV8874::updatePossibleSpeed(float speed){
   }
   _updateSpeed(speed);
 }
+
 /*
 Updates the motor speed by a `float speed` value. Value has to be between -100.0 and 100.0
 Any   value higher or lower will be capped.
@@ -126,11 +127,11 @@ Any   value higher or lower will be capped.
 void  DRV8874::_updateSpeed(float speed){
   _speed = speed;
   float cappedSpeed = DRV8874::_capSpeed(_speed);
-  if (enablePwmMode){
-    DRV8874::_updateSpeedPWM(cappedSpeed);
+  if (_enablePwmMode){
+    DRV8874::_updateSpeedPwm(cappedSpeed);
     return;
   }
-  DRV8874::_updateSpeedPhEN(cappedSpeed);
+  DRV8874::_updateSpeedPhEn(cappedSpeed);
 }
 
 /*
@@ -204,13 +205,13 @@ float DRV8874::_capSpeed(float speed){
   return speed;
 }
 
-void  DRV8874::rampSpeedAcc (float targetSpeed, float setAcc,      bool useLoop  = true){
+void  DRV8874::rampSpeedAcc (float targetSpeed, float setAcc,      bool useLoop  /*= true*/){
   if (_resetInProgress){
     return;
   }
   return;
 }
-void  DRV8874::rampSpeedTime(float targetSpeed, float timeSeconds, bool useDelay = true){
+void  DRV8874::rampSpeedTime(float targetSpeed, float timeSeconds, bool useDelay /*= true*/){
   if (_resetInProgress){
     return;
   }

@@ -47,8 +47,8 @@ class DRV8874
     float _speed;
     float _acceleration;
     void  _updateSpeed(float speed);
-    void _resetSafeDelay();
-    void _resetSafeNoDelay();
+    void _resetSafeDelay(int int_reset_time_ms);
+    void _resetSafeNoDelay(int int_reset_time_ms);
     void _updateSpeedPwm(float speed);
     void _updateSpeedPhEn(float speed);
     float _capSpeed(float speed);
