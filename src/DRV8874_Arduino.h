@@ -29,7 +29,7 @@ class DRV8874
     void  updatePossibleSpeed(float speed);
     void  rampSpeedAcc (float targetSpeed, float setAcc,      bool useLoop  = true);
     void  rampSpeedTime(float targetSpeed, float timeSeconds, bool useDelay = true);
-    void  coastBrake();
+    void  brake();
     bool  checkAlarm();
     float currentSpeed();
   private:
@@ -37,6 +37,7 @@ class DRV8874
     int   _phIn2Pin;
     int   _sleepPin;
     int   _alarmPin;
+    int   _maxPwmValue;
     bool  _alarmState;
     bool  _invertControl;
     bool  _enablePwmMode;
@@ -47,12 +48,13 @@ class DRV8874
     float _speed;
     float _acceleration;
     void  _updateSpeed(float speed);
-    void _resetSafeDelay(int int_reset_time_ms);
-    void _resetSafeNoDelay(int int_reset_time_ms);
-    void _updateSpeedPwm(float speed);
-    void _updateSpeedPhEn(float speed);
+    void  _resetSafeDelay(int int_reset_time_ms);
+    void  _resetSafeNoDelay(int int_reset_time_ms);
+    void  _updateSpeedPwm(float speed);
+    void  _updateSpeedPhEn(float speed);
     float _capSpeed(float speed);
     int   _pwmValue(float absSpeed);
- 
+    void  _brakePwm();
+    void  _brakePhEn();
 };
 #endif

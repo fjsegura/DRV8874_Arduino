@@ -46,6 +46,9 @@ void DRV8874::begin(bool pullupAlarm /*= true*/)
   } else {
   	pinMode(_alarmPin,INPUT);
   }
+  analogWriteResolution(_enIn1Pin, _PWM_RESOLUTION_DRIVER);
+  analogWriteResolution(_phIn2Pin, _PWM_RESOLUTION_DRIVER);
+  _maxPwmValue = int(pow(2.0, _PWM_RESOLUTION_DRIVER)) - 1;
 }
 
 /*
@@ -146,14 +149,14 @@ void DRV8874::_updateSpeedPhEn(float speed){
   //Set direction
   if (speed > 0){
     //Postive value
-    digitalWrite(_enIn1Pin, !_invertControl);
+    digitalWrite(_phIn2Pin, !_invertControl);
   } else {
     //Negative value
-    digitalWrite(_enIn1Pin, _invertControl);
+    digitalWrite(_phIn2Pin, _invertControl);
   }
   //Set speed
   float absSpeed = abs(speed);
-  analogWrite(_phIn2Pin, DRV8874::_pwmValue(absSpeed));
+  analogWrite(_enIn1Pin, DRV8874::_pwmValue(absSpeed));
 }
 
 /*
@@ -192,8 +195,10 @@ void DRV8874::_updateSpeedPwm(float speed){
 }
 
 int DRV8874::_pwmValue(float absSpeed) {
-  
-  return 0;
+  //Reduce float
+  int absSpeedInt = int(absSpeed*100.0); 
+  int pwmValue = map(absSpeed,0, 10000, 0, _maxPwmValue);
+  return pwmValue;
 }
 float DRV8874::_capSpeed(float speed){
   if (speed > 100.0){
@@ -217,10 +222,33 @@ void  DRV8874::rampSpeedTime(float targetSpeed, float timeSeconds, bool useDelay
   }
   return;
 }
-void  DRV8874::coastBrake(){
-  return;
+/*
+This function brakes the motors by driving the H-bridge in slow decay mode.
+*/
+void  DRV8874::brake(){
+  if (_resetInProgress){
+    return;
+  }
+  _accInProgress = false;
+  if (_enablePwmMode){
+    _brakePwm();
+    return;
+  }
+  _brakePhEn();
 }
-
+/*
+Brake setting both driver input HIGH.
+*/
+void  DRV8874::_brakePwm(){
+  digitalWrite(_enIn1Pin, HIGH);
+  digitalWrite(_phIn2Pin, HIGH);
+}
+/*
+Brake setting enable LOW.
+*/
+void  DRV8874::_brakePhEn(){
+  digitalWrite(_enIn1Pin, LOW);
+}
 /*
 Return current `float speed` value.
 */
