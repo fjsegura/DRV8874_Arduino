@@ -46,9 +46,14 @@ void DRV8874::begin(bool pullupAlarm /*= true*/)
   } else {
   	pinMode(_alarmPin,INPUT);
   }
-  analogWriteResolution(_enIn1Pin, _PWM_RESOLUTION_DRIVER);
-  analogWriteResolution(_phIn2Pin, _PWM_RESOLUTION_DRIVER);
-  _maxPwmValue = int(pow(2.0, _PWM_RESOLUTION_DRIVER)) - 1;
+  if (ENABLE_PWM_RESOLUTION_OVERRIDE){
+   //analogWriteResolution(_PWM_RESOLUTION_DRIVER);
+   //analogWriteResolution(_phIn2Pin, _PWM_RESOLUTION_DRIVER);
+   _maxPwmValue = int(pow(2.0, _PWM_RESOLUTION_DRIVER)) - 1;
+  } else {
+    _maxPwmValue = 255;
+  }
+  digitalWrite(_sleepPin, HIGH);
 }
 
 /*
@@ -131,9 +136,11 @@ void  DRV8874::_updateSpeed(float speed){
   _speed = speed;
   float cappedSpeed = DRV8874::_capSpeed(_speed);
   if (_enablePwmMode){
+    _debugSerial("Updating speed in PWM mode");
     DRV8874::_updateSpeedPwm(cappedSpeed);
     return;
   }
+  _debugSerial("Updating speed in PH/EN mode");
   DRV8874::_updateSpeedPhEn(cappedSpeed);
 }
 
@@ -197,15 +204,16 @@ void DRV8874::_updateSpeedPwm(float speed){
 int DRV8874::_pwmValue(float absSpeed) {
   //Reduce float
   int absSpeedInt = int(absSpeed*100.0); 
-  int pwmValue = map(absSpeed,0, 10000, 0, _maxPwmValue);
+  int pwmValue = map(absSpeedInt,0, 10000, 0, _maxPwmValue);
+  _debugSerial(String("MaxPWM value: " +String(_maxPwmValue) + " Calculated PWM value: " +String(pwmValue)));
   return pwmValue;
 }
 float DRV8874::_capSpeed(float speed){
-  if (speed > 100.0){
-    return 100.0;
+  if (speed > 99.9){
+    return 99.9;
   } 
-  if (speed < -100.0){
-    return -100.0;
+  if (speed < -99.9){
+    return -99.9;
   }
   return speed;
 }
@@ -229,6 +237,7 @@ void  DRV8874::brake(){
   if (_resetInProgress){
     return;
   }
+  _debugSerial(String("Starting to brake" ));
   _accInProgress = false;
   if (_enablePwmMode){
     _brakePwm();
@@ -240,18 +249,33 @@ void  DRV8874::brake(){
 Brake setting both driver input HIGH.
 */
 void  DRV8874::_brakePwm(){
+  _debugSerial(String("Braking with PWM mode." ));
   digitalWrite(_enIn1Pin, HIGH);
   digitalWrite(_phIn2Pin, HIGH);
 }
+
 /*
 Brake setting enable LOW.
 */
 void  DRV8874::_brakePhEn(){
+  _debugSerial(String("Braking with Ph/En mode." ));
   digitalWrite(_enIn1Pin, LOW);
 }
+
 /*
 Return current `float speed` value.
 */
 float DRV8874::currentSpeed(){
+  _debugSerial(String("Current speed: " + String(_speed)));
   return _speed;
+}
+
+/*
+`_debugSerial`serial prints a msg if the DRV887X_DEBUG_SERIAL is 1 and Serial is available.
+*/
+void _debugSerial (String msg){
+  if (!DRV887X_DEBUG_SERIAL || !Serial.available()){
+    return;
+  }
+  Serial.println(msg);
 }

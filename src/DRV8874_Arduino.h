@@ -10,8 +10,13 @@
 //Used for the reset safe with delay, minimun time before continuing
 #define _MIN_RECOVER_TIME 10
 
+//Override PWM resolution TODO: FIX THIS OVERRIDE
+#define ENABLE_PWM_RESOLUTION_OVERRIDE 0
 //Set the resolution for the PWM driver, should match MCU pwm resolution
 #define _PWM_RESOLUTION_DRIVER 8
+//Set const to 1 to enable serial debug 
+#define DRV887X_DEBUG_SERIAL 0
+
 
 class DRV8874
 {
@@ -56,5 +61,6 @@ class DRV8874
     int   _pwmValue(float absSpeed);
     void  _brakePwm();
     void  _brakePhEn();
+    void  _debugSerial(String msg);
 };
 #endif

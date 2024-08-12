@@ -1,22 +1,27 @@
 #include <DRV8874_Arduino.h>
 
-#define PIN_IN1 0
-#define PIN_IN2 0
-#define PIN_SLEEP 0
-#define PIN_ALARM 0
+int pin_IN1 = 8;
+int pin_IN2 = 18;
+int pin_SLEEP = 17;
+int pin_ALARM = 16;
+bool pullupAlarm = true;
 
-DRV8874 motor = DRV8874(PIN_IN1,PIN_IN2,PIN_SLEEP,PIN_ALARM);
+DRV8874 motor = DRV8874(pin_IN1, pin_IN2, pin_SLEEP, pin_ALARM);
 
 void setup() {
   // put your setup code here, to run once:
-  motor.begin();
+  Serial.begin(9600);
+  while (!Serial.available()){
+    delay(10);
+  }
+  motor.begin(pullupAlarm);
   motor.resetSafe();
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
   motor.updatePossibleSpeed(90.0);
-  delay(1000);
+  delay(10000);
   motor.updatePossibleSpeed(0);
-  delay(1000);
+  delay(10000);
 }
