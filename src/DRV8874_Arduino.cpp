@@ -273,7 +273,7 @@ float DRV8874::currentSpeed(){
 /*
 `_debugSerial`serial prints a msg if the DRV887X_DEBUG_SERIAL is 1 and Serial is available.
 */
-void _debugSerial (String msg){
+void DRV8874::_debugSerial (String msg){
   if (!DRV887X_DEBUG_SERIAL || !Serial.available()){
     return;
   }
