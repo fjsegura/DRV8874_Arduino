@@ -118,6 +118,7 @@ Any   value higher or lower will be capped.
 */
 void  DRV8874::updatePossibleSpeed(float speed){
   //Don't update speed if the reset is in progress
+  _debugSerial(String("Update possible speed: " + String(speed)));
   if (_resetInProgress){
     return;
   }
@@ -274,8 +275,16 @@ float DRV8874::currentSpeed(){
 `_debugSerial`serial prints a msg if the DRV887X_DEBUG_SERIAL is 1 and Serial is available.
 */
 void DRV8874::_debugSerial (String msg){
-  if (!DRV887X_DEBUG_SERIAL || !Serial.available()){
+  if (!_debugPrint || !Serial){
     return;
   }
   Serial.println(msg);
+}
+
+/*
+Toggle debug printing for the DRV8874 class.
+*/
+void DRV8874::toggleDebug (){
+  _debugPrint = !_debugPrint;
+  _debugSerial(String("Debug printing enabled for DRV887X."));
 }

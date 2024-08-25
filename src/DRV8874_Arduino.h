@@ -14,8 +14,6 @@
 #define ENABLE_PWM_RESOLUTION_OVERRIDE 0
 //Set the resolution for the PWM driver, should match MCU pwm resolution
 #define _PWM_RESOLUTION_DRIVER 8
-//Set const to 1 to enable serial debug 
-#define DRV887X_DEBUG_SERIAL 0
 
 
 class DRV8874
@@ -35,6 +33,7 @@ class DRV8874
     void  rampSpeedAcc (float targetSpeed, float setAcc,      bool useLoop  = true);
     void  rampSpeedTime(float targetSpeed, float timeSeconds, bool useDelay = true);
     void  brake();
+    void  toggleDebug();
     bool  checkAlarm();
     float currentSpeed();
   private:
@@ -49,6 +48,7 @@ class DRV8874
     bool  _resetInProgress;
     bool  _waitInProgress;
     bool  _accInProgress;
+    bool  _debugPrint;
     long  _resetTime;
     float _speed;
     float _acceleration;
