@@ -150,8 +150,7 @@ Updates the motor speed by a `float speed` value. Using the Phase / Enable mode.
 */
 void DRV8874::_updateSpeedPhEn(float speed){
   if (speed == 0){
-    digitalWrite(_enIn1Pin, LOW);
-    digitalWrite(_phIn2Pin, LOW);
+    analogWrite(_enIn1Pin, 0);
     return;
   } 
   //Set direction
