@@ -28,6 +28,12 @@ class DRV8874
 	    bool enablePwmMode = false
 	    );
     void  begin(bool pullupAlarm = false);
+    void  setSpeed(float speedPercent);
+    void  setSpeedPercent(float speedPercent);
+    void  resetIfAlarm(int resetTimeMs = 1000, bool blocking = true);
+    bool  isAlarmed();
+    float getSpeed();
+    void  enableDebug(bool enabled = true);
     void  resetSafe(int int_reset_time_ms = 1000, bool useDelay = true);
     void  updatePossibleSpeed(float speed);
     void  rampSpeedAcc (float targetSpeed, float setAcc,      bool useLoop  = true);

@@ -15,13 +15,13 @@ void setup() {
     delay(10);
   }
   motor.begin(pullupAlarm);
-  motor.resetSafe();
+  motor.resetIfAlarm();
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  motor.updatePossibleSpeed(90.0);
+  motor.setSpeed(90.0);
   delay(10000);
-  motor.updatePossibleSpeed(0);
+  motor.setSpeed(0);
   delay(10000);
 }
