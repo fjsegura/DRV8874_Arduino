@@ -21,15 +21,23 @@ DRV8874::DRV8874(
 		    int alarmPin,
 		    bool invertControl /*= false*/,
 		    bool enablePwmMode /*= false*/
-		    )
-{
-  _enIn1Pin = enIn1Pin;
-  _phIn2Pin = phIn2Pin;
-  _sleepPin = sleepPin;
-  _alarmPin = alarmPin;
-  _enablePwmMode = enablePwmMode;
-  _invertControl = invertControl;
-}
+		    ) :
+  _enIn1Pin(enIn1Pin),
+  _phIn2Pin(phIn2Pin),
+  _sleepPin(sleepPin),
+  _alarmPin(alarmPin),
+  _maxPwmValue(255),
+  _alarmState(false),
+  _invertControl(invertControl),
+  _enablePwmMode(enablePwmMode),
+  _resetInProgress(false),
+  _waitInProgress(false),
+  _accInProgress(false),
+  _debugPrint(false),
+  _resetTime(0),
+  _speed(0.0),
+  _acceleration(0.0)
+{}
 
 /*
 Begin function, enable internal pull with pullupAlarm = true.
@@ -53,7 +61,13 @@ void DRV8874::begin(bool pullupAlarm /*= true*/)
   } else {
     _maxPwmValue = 255;
   }
+  analogWrite(_enIn1Pin, 0);
+  digitalWrite(_phIn2Pin, LOW);
   digitalWrite(_sleepPin, HIGH);
+  _speed = 0.0;
+  _resetInProgress = false;
+  _waitInProgress = false;
+  _accInProgress = false;
 }
 
 /*
@@ -61,6 +75,10 @@ void DRV8874::begin(bool pullupAlarm /*= true*/)
 */
 bool  DRV8874::checkAlarm(){
   return !bool(digitalRead(_alarmPin));
+}
+
+bool DRV8874::isAlarmed(){
+  return checkAlarm();
 }
 
 /*
@@ -78,6 +96,10 @@ void  DRV8874::resetSafe(int int_reset_time_ms /*= 1000*/, bool useDelay /*= tru
   }
   //No delay
   DRV8874::_resetSafeNoDelay(int_reset_time_ms);
+}
+
+void DRV8874::resetIfAlarm(int resetTimeMs /*= 1000*/, bool blocking /*= true*/){
+  resetSafe(resetTimeMs, blocking);
 }
 
 /*
@@ -129,13 +151,21 @@ void  DRV8874::updatePossibleSpeed(float speed){
   _updateSpeed(speed);
 }
 
+void DRV8874::setSpeed(float speedPercent){
+  updatePossibleSpeed(speedPercent);
+}
+
+void DRV8874::setSpeedPercent(float speedPercent){
+  updatePossibleSpeed(speedPercent);
+}
+
 /*
 Updates the motor speed by a `float speed` value. Value has to be between -100.0 and 100.0
 Any   value higher or lower will be capped.
 */
 void  DRV8874::_updateSpeed(float speed){
-  _speed = speed;
-  float cappedSpeed = DRV8874::_capSpeed(_speed);
+  float cappedSpeed = DRV8874::_capSpeed(speed);
+  _speed = cappedSpeed;
   if (_enablePwmMode){
     _debugSerial("Updating speed in PWM mode");
     DRV8874::_updateSpeedPwm(cappedSpeed);
@@ -209,11 +239,11 @@ int DRV8874::_pwmValue(float absSpeed) {
   return pwmValue;
 }
 float DRV8874::_capSpeed(float speed){
-  if (speed > 99.9){
-    return 99.9;
+  if (speed > 100.0){
+    return 100.0;
   } 
-  if (speed < -99.9){
-    return -99.9;
+  if (speed < -100.0){
+    return -100.0;
   }
   return speed;
 }
@@ -270,6 +300,10 @@ float DRV8874::currentSpeed(){
   return _speed;
 }
 
+float DRV8874::getSpeed(){
+  return currentSpeed();
+}
+
 /*
 `_debugSerial`serial prints a msg if the DRV887X_DEBUG_SERIAL is 1 and Serial is available.
 */
@@ -286,4 +320,8 @@ Toggle debug printing for the DRV8874 class.
 void DRV8874::toggleDebug (){
   _debugPrint = !_debugPrint;
   _debugSerial(String("Debug printing enabled for DRV887X."));
+}
+
+void DRV8874::enableDebug(bool enabled /*= true*/){
+  _debugPrint = enabled;
 }
