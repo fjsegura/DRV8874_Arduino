@@ -116,8 +116,8 @@ void DRV8874::_resetSafeNoDelay(int int_reset_time_ms){
     _waitInProgress = true;
     _resetTime = millis();
   }
-  //Allow time for driver to stabilize
-  if ((millis()-_resetTime)>_MIN_RECOVER_TIME){
+  //Allow time for driver to stabilize (only after sleep has been released)
+  if (_waitInProgress && (millis()-_resetTime)>_MIN_RECOVER_TIME){
     _resetInProgress = false;
     _waitInProgress = false;
   }
