@@ -28,14 +28,14 @@ class DRV8874
 	    bool enablePwmMode = false
 	    );
     void  begin(bool pullupAlarm = false);
-    void  resetSafe(int int_reset_time_ms = 1000, bool useDelay = true);
-    void  updatePossibleSpeed(float speed);
-    void  rampSpeedAcc (float targetSpeed, float setAcc,      bool useLoop  = true);
-    void  rampSpeedTime(float targetSpeed, float timeSeconds, bool useDelay = true);
+    void  clearFault(int resetMs = 1000, bool useDelay = true);
+    void  setSpeed(float speed);
+    void  rampToSpeed(float target, float acceleration, bool useLoop = true);
+    void  rampToSpeedInTime(float target, float seconds, bool useDelay = true);
     void  brake();
-    void  toggleDebug();
+    void  setDebug(bool enable);
     bool  checkAlarm();
-    float currentSpeed();
+    float getSpeed();
   private:
     int   _enIn1Pin;
     int   _phIn2Pin;
@@ -62,5 +62,8 @@ class DRV8874
     void  _brakePwm();
     void  _brakePhEn();
     void  _debugSerial(String msg);
+#ifdef UNIT_TESTING
+    friend class DRV8874_TA;
+#endif
 };
 #endif

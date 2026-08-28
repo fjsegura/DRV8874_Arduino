@@ -23,19 +23,29 @@ DRV8874::DRV8874(
 		    bool enablePwmMode /*= false*/
 		    )
 {
-  _enIn1Pin = enIn1Pin;
-  _phIn2Pin = phIn2Pin;
-  _sleepPin = sleepPin;
-  _alarmPin = alarmPin;
+  _enIn1Pin      = enIn1Pin;
+  _phIn2Pin      = phIn2Pin;
+  _sleepPin      = sleepPin;
+  _alarmPin      = alarmPin;
   _enablePwmMode = enablePwmMode;
   _invertControl = invertControl;
+  // B1: initialise all remaining fields to safe defaults
+  _maxPwmValue     = 255;
+  _alarmState      = false;
+  _resetInProgress = false;
+  _waitInProgress  = false;
+  _accInProgress   = false;
+  _debugPrint      = false;
+  _resetTime       = 0;
+  _speed           = 0.0f;
+  _acceleration    = 0.0f;
 }
 
 /*
 Begin function, enable internal pull with pullupAlarm = true.
 */
 
-void DRV8874::begin(bool pullupAlarm /*= true*/)
+void DRV8874::begin(bool pullupAlarm /*= false*/)
 {
   // Setup pin modes
   pinMode(_enIn1Pin, OUTPUT);
@@ -64,20 +74,20 @@ bool  DRV8874::checkAlarm(){
 }
 
 /*
-`resetSafe` resets DRV8874 when alarmed.
+`clearFault` resets DRV8874 when alarmed.
 */
-void  DRV8874::resetSafe(int int_reset_time_ms /*= 1000*/, bool useDelay /*= true*/){
+void  DRV8874::clearFault(int resetMs /*= 1000*/, bool useDelay /*= true*/){
   //Return if not alarmed
   if (!DRV8874::checkAlarm() && !_resetInProgress){
     return;
   }
   //Use delay for the reset
   if (useDelay){
-    DRV8874::_resetSafeDelay(int_reset_time_ms);
+    DRV8874::_resetSafeDelay(resetMs);
     return;  
   }
   //No delay
-  DRV8874::_resetSafeNoDelay(int_reset_time_ms);
+  DRV8874::_resetSafeNoDelay(resetMs);
 }
 
 /*
@@ -116,16 +126,13 @@ void DRV8874::_resetSafeNoDelay(int int_reset_time_ms){
 Updates the motor speed by a `float speed` value. Value has to be between -100.0 and 100.0
 Any   value higher or lower will be capped.
 */
-void  DRV8874::updatePossibleSpeed(float speed){
+void  DRV8874::setSpeed(float speed){
   //Don't update speed if the reset is in progress
   _debugSerial(String("Update possible speed: " + String(speed)));
   if (_resetInProgress){
     return;
   }
-  //Don't update speed if acc is in progress
-  if (_accInProgress){
-    return;
-  }
+  // B6: _accInProgress guard removed — ramp functions are unimplemented stubs
   _updateSpeed(speed);
 }
 
@@ -202,29 +209,29 @@ void DRV8874::_updateSpeedPwm(float speed){
 }
 
 int DRV8874::_pwmValue(float absSpeed) {
-  //Reduce float
-  int absSpeedInt = int(absSpeed*100.0); 
-  int pwmValue = map(absSpeedInt,0, 10000, 0, _maxPwmValue);
-  _debugSerial(String("MaxPWM value: " +String(_maxPwmValue) + " Calculated PWM value: " +String(pwmValue)));
+  int pwmValue = constrain((int)round(absSpeed * _maxPwmValue / 100.0f),
+                            0, _maxPwmValue);
+  _debugSerial(String("MaxPWM value: " + String(_maxPwmValue)
+               + " Calculated PWM value: " + String(pwmValue)));
   return pwmValue;
 }
 float DRV8874::_capSpeed(float speed){
-  if (speed > 99.9){
-    return 99.9;
+  if (speed > 100.0f){
+    return 100.0f;
   } 
-  if (speed < -99.9){
-    return -99.9;
+  if (speed < -100.0f){
+    return -100.0f;
   }
   return speed;
 }
 
-void  DRV8874::rampSpeedAcc (float targetSpeed, float setAcc,      bool useLoop  /*= true*/){
+void  DRV8874::rampToSpeed(float target, float acceleration, bool useLoop  /*= true*/){
   if (_resetInProgress){
     return;
   }
   return;
 }
-void  DRV8874::rampSpeedTime(float targetSpeed, float timeSeconds, bool useDelay /*= true*/){
+void  DRV8874::rampToSpeedInTime(float target, float seconds, bool useDelay /*= true*/){
   if (_resetInProgress){
     return;
   }
@@ -255,17 +262,17 @@ void  DRV8874::_brakePwm(){
 }
 
 /*
-Brake setting enable LOW.
+Brake: drive EN HIGH for slow-decay mode (PH/EN mode).
 */
 void  DRV8874::_brakePhEn(){
   _debugSerial(String("Braking with Ph/En mode." ));
-  digitalWrite(_enIn1Pin, LOW);
+  digitalWrite(_enIn1Pin, HIGH);
 }
 
 /*
 Return current `float speed` value.
 */
-float DRV8874::currentSpeed(){
+float DRV8874::getSpeed(){
   _debugSerial(String("Current speed: " + String(_speed)));
   return _speed;
 }
@@ -283,7 +290,7 @@ void DRV8874::_debugSerial (String msg){
 /*
 Toggle debug printing for the DRV8874 class.
 */
-void DRV8874::toggleDebug (){
-  _debugPrint = !_debugPrint;
+void DRV8874::setDebug(bool enable){
+  _debugPrint = enable;
   _debugSerial(String("Debug printing enabled for DRV887X."));
 }
